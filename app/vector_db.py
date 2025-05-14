@@ -1,13 +1,15 @@
 import numpy as np
 import faiss
+from app.embedding import MistralEmbedder
 
 class VectorDB:
-    def __init__(self, dim: int):
+    def __init__(self, dim: int, embedder: MistralEmbedder):
         self.dim = dim
         self.index = faiss.IndexFlatIP(dim)  # Flat index using inner product distance
         self.id_to_vector = {} # Map internal IDs to the vector
-        self.id_to_metadata = {}  # Map internal IDs to external IDs or metadata
+        self.id_to_text = {} # Map internal IDs to the text itself
         self.current_id = 0  # ID counter
+        self.embedder = embedder # We need to re-embed our chunks
 
     def _normalize(self, vector: np.ndarray) -> np.ndarray:
         norm = np.linalg.norm(vector)
@@ -15,19 +17,35 @@ class VectorDB:
             raise ValueError("Cannot normalize a zero vector.")
         return vector / norm
 
-    def add_vector(self, external_id: str, vector: np.ndarray):
+    def add_vector(self, vector: np.ndarray, text: str):
         """
         Add a vector to the store.
 
         Args:
-            vector_id (str or int): A unique identifier for the vector.
             vector (numpy.ndarray): The vector data to be stored.
         """
         vector = self._normalize(vector).astype('float32')
         self.index.add(np.array([vector]))  # Add to FAISS index
         self.id_to_vector[self.current_id] = vector
-        self.id_to_metadata[self.current_id] = external_id
+        self.id_to_text[self.current_id] = text
         self.current_id += 1
+
+    def add_chunks(self, chunks: list[list[str]]):
+        """
+        Adds multiple chunks to the DB, embedding them first.
+
+        Args:
+            chunks (list[list[str]]): The list of chunks to be stored. Each chunk
+            is a list of strings.
+        """
+        # Flatten the chunks
+        flattened_chunks = [" ".join(chunk) for chunk in chunks]
+
+        # Embed first
+        embeddings = self.embedder.embed_texts(flattened_chunks)
+
+        for vector, text in zip(embeddings, flattened_chunks):
+            self.add_vector(vector, text)
 
     def get_vector(self, vector_id):
         """
@@ -36,41 +54,31 @@ class VectorDB:
         Args:
             vector_id (str or int): The identifier of the vector to retrieve.
         Returns:
-            numpy.ndarray: The vector data if found, or None if not found.
+            np.ndarray: The vector data if found, or None if not found.
         """
         return self.id_to_vector.get(vector_id)
-    
-    def similarity(self, a: np.ndarray, b: np.ndarray) -> float:
-        """
-        Compute cosine similarity between two vectors.
-
-        Args:
-            vector_a (np.ndarray): First vector.
-            vector_b (np.ndarray): Second vector.
-
-        Returns:
-            float: Cosine similarity score between -1 and 1.
-        """
-        a = self._normalize(a)
-        b = self._normalize(b)
-        return float(np.dot(a, b))
 
     def search(self, query_vector: np.ndarray, num_results: int = 5):
         """
-`       Find similar vectors to the query vector using brute-force search.
+`       Find similar vectors to the query vector.
 
         Args:
             query_vector (numpy.ndarray): The query vector for similarity search.
             num_results (int): The number of similar vectors to return.
 
         Returns:
-            list: A list of (vector_id, similarity_score) tuples for the most similar vectors.
+            List[dict]: Each dict contains the internal ID, the vector, and similarity score.
         """
         query_vector = self._normalize(query_vector).astype('float32')
         D, I = self.index.search(np.array([query_vector]), num_results)
+
         results = []
         for score, idx in zip(D[0], I[0]):
-            if idx < self.current_id:
-                external_id = self.id_to_metadata[idx]
-                results.append({"id": external_id, "score": float(score)})
+            if idx in self.id_to_vector:
+                results.append({
+                    "id": idx,
+                    "text": self.id_to_text[idx],
+                    "score": float(score)
+                })
+
         return results
