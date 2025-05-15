@@ -27,16 +27,16 @@ rag-backend/
 
 ## Requirements ##
 Requires a Mistral API key.
-For keyword search, downloading stopwords is required:
-`>>> nltk.download('stopwords')`
+For keyword search, downloading stopwords is required:      
+`>>> nltk.download('stopwords')`        
 This enables stopword removal before keyword matching. 
 For packages, see requirements file.
 
 ## File Upload Endpoint ##
 To upload files run
 ```uvicorn main:app --reload```
-inside the app directory. Then, [open the UI](http://127.0.0.1:8000/docs).
-Click POST and the choose file(s) to upload.
+inside the app/ directory. Then, [open the UI](http://127.0.0.1:8000/docs).
+Click , then 'Try it out', then choose file(s) to upload.
 
 ## PDF Text Extraction and Chunking ##
 PDFs are extracted using PyMuPDF. Chunking is done using semantic chunking with the difference threshold set by 
@@ -62,3 +62,6 @@ user-defined similarity threshold.
 
 ## Embeddings ##
 We use `mistral-embed` as the embedding model.
+
+## Search ##
+Enter 'semantic', 'keyword', or 'hybrid' for the three types of search.
