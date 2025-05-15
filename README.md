@@ -39,8 +39,9 @@ inside the app/ directory. Then, [open the UI](http://127.0.0.1:8000/docs).
 Click , then 'Try it out', then choose file(s) to upload.
 
 ## PDF Text Extraction and Chunking ##
-PDFs are extracted using PyMuPDF. Chunking is done using semantic chunking with the difference threshold set by 
-1 standard deviation in the data. This is the most versatile chunking strategy given the non-specific domains of the pdf inputs.
+PDFs are extracted using PyMuPDF. Initial chunking is done by page, then sentence, so that one page of sentences is input into
+the embedding model at one time. This prevents context overflow.     
+Finally, the sentences are re-chunked using semantic chunking with the difference threshold set by 1 standard deviation in the data. This is the most versatile chunking strategy given the non-specific domains of the pdf inputs.
 
 ## Vector Store Integration ##
 Documents are embedded and stored in a proprietary vector store.

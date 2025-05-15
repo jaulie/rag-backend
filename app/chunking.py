@@ -1,5 +1,6 @@
 import re
 import numpy as np
+import pymupdf
 from embedding import MistralEmbedder
 
 def chunk_sentences(text: str) -> list[str]:
@@ -8,6 +9,25 @@ def chunk_sentences(text: str) -> list[str]:
     """
     sentences = re.split(r'(?<=\.)\s+', text)
     return sentences
+
+# Chunk into pages first, not paragraphs.
+def extract_paragraphs(lines: list[str]) -> list[str]:
+    """
+    Extracts paragraphs using heuristics.
+    """
+    paragraphs = []
+    current = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            if current:
+                paragraphs.append(" ".join(current))
+                current = []
+        else:
+            current.append(line)
+    if current:
+        paragraphs.append(" ".join(current))
+    return paragraphs
 
 class SemanticChunker:
     def __init__(self, embedder: MistralEmbedder):
@@ -18,23 +38,50 @@ class SemanticChunker:
         similarity = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
         return 1 - similarity
 
-    def chunk(self, sentences: list[str], threshold_std: float = 1.0) -> list[list[str]]:
+    def chunk(self, paragraphs: list[str]) -> list[list[str]]:
+        """
+        Call semantic chunking for each paragraph.
+
+        Args:
+            paragraphs: List of paragraphs.
+
+        Returns:
+            A list of chunks (each a list of strings).
+        """
+        chunks = []
+        for paragraph in paragraphs:
+            sentences = chunk_sentences(paragraph)
+            embeddings = self.embedder.embed_texts(sentences)
+            semantic_chunks = self.semantic_chunk(sentences, embeddings)
+            chunks.extend(semantic_chunks)
+        
+        return chunks
+
+    def semantic_chunk(self, sentences: list[str], embeddings: list[list[float]], threshold_std: float = 1.0) -> list[list[str]]:
         """
         Perform semantic chunking based on differences in embeddings.
 
         Args:
-            sentences: List of sentences or paragraphs.
+            sentences: list of sentences.
+            embeddings: list of embeddings
             threshold_std: The number of standard deviations above the mean to consider a semantic shift.
 
         Returns:
             A list of chunks (each a list of strings).
         """
-        embeddings = self.embedder.embed_texts(sentences)
+        if not sentences:
+            return []
 
+        # Nothing to chunk if there is only one sentence
+        if len(embeddings) <= 1:
+            return [sentences]
+        
         # Compute semantic distance between adjacent segments
         diffs = [self._cosine_distance(embeddings[i], embeddings[i+1]) for i in range(len(embeddings) - 1)]
         mean_diff = np.mean(diffs)
         std_diff = np.std(diffs)
+
+        # Determine dynamic threshold using standard deviation
         threshold = mean_diff + threshold_std * std_diff
 
         # Split into chunks

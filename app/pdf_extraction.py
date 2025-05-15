@@ -1,13 +1,11 @@
 import pymupdf
 
-def extract_text(file_path: str) -> str:
+def extract_pages(file_path: str) -> str:
     """Read PDF and extract all text."""
     doc = pymupdf.open(file_path)
-    full_text = ""
-    for page in doc:
-        full_text += page.get_text()
+    pages = [page.get_text().strip() for page in doc]
     doc.close()
-    return full_text
+    return [p for p in pages if p]
 
 def save_file(file_contents: bytes, file_path: str) -> None:
     """Save uploaded file to a temporary location."""

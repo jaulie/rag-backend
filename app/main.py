@@ -2,8 +2,8 @@ import os
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 
-from chunking import chunk_sentences, SemanticChunker
-from pdf_extraction import extract_text, save_file
+from chunking import extract_paragraphs, SemanticChunker
+from pdf_extraction import extract_pages, save_file
 from query_processing import is_retrieval_query, run, run_with_context
 from vector_db import VectorDB
 from embedding import MistralEmbedder
@@ -13,7 +13,7 @@ embedder = MistralEmbedder()
 chunker = SemanticChunker(embedder)
 db = VectorDB(1024, embedder=embedder)
 
-# TODO: error handling for non-pdf file formats
+# TODO: handling for non-pdf file formats
 # TODO: error handling with file sizes (large quantities of PDFs or long PDFs)
 @app.post("/upload/")
 async def read_pdf(files: list[UploadFile] = File(..., description="Upload one or more PDF files")):
@@ -25,14 +25,14 @@ async def read_pdf(files: list[UploadFile] = File(..., description="Upload one o
         save_file(content, pdf_path)
 
         # Get the text from the pdf and chunk into sentences
-        full_text = extract_text(pdf_path)
-        sentences = chunk_sentences(full_text)
+        #full_text = extract_text(pdf_path)
+        paragraphs = extract_pages(pdf_path)
 
         # Clean the path
         os.remove(pdf_path)
 
         # Semantic Chunking
-        chunks = chunker.chunk(sentences)
+        chunks = chunker.chunk(paragraphs)
 
         # Store in our VectorDB
         db.add_chunks(chunks)
@@ -58,13 +58,11 @@ async def query_rag(payload: QueryRequest):
     query_embedding = embedder.embed_texts([payload.query])[0]
     if payload.search_type == "keyword":
         retrieved = db.keyword_search(payload.query, num_results=3)  
-        print(retrieved)
         context = "\n".join([item['text'] for item in retrieved])
         response = run_with_context(payload.query, context)
         return {"answer": response, "source": "Keyword search with LLM"}
     elif payload.search_type == "semantic":
         retrieved = db.search(query_embedding, num_results=3)
-        print(retrieved[0])
         context = "\n".join([item['text'] for item in retrieved])
         response = run_with_context(payload.query, context)
         return {"answer": response, "source": "Semantic search with LLM"}
