@@ -19,7 +19,7 @@ rag-backend/
 │   ├── main.py             # Endpoints for FastAPI
 │   ├── query_processing.py # Query handling functions           
 │   ├── pdf_extraction.py   # PyMuPDF text extraction functions
-│   └── vector_db.py        # VectorDB with FAISS search
+│   └── vector_db.py        # VectorDB with FAISS index
 ├── data/                   # Optional storage (e.g., temp PDFs)
 ├── environment.yml
 └── README.md
@@ -45,10 +45,11 @@ Finally, the sentences are re-chunked using semantic chunking with the differenc
 
 ## Vector Store Integration ##
 Documents are embedded and stored in a proprietary vector store.
-Semantic search is implemented using FAISS. Keyword search simply removes stop words and
+Semantic search is implemented using a FAISS index. Keyword search simply removes stop words and
 determines similarity based on keyword count.   
 Hybrid search combines both approaches 50/50. In future iterations, the hybrid search function could include a slider
-so that the user can weigh which search option they prefer to be dominant.
+so that the user can weigh which search option they prefer to be dominant.   
+Potential feature: lower accuracy, faster search with LSH or HNSW index if user is willing to compromise on accuracy for speed-up.
 
 ## Query Endpoint ##
 User enters their query. The user can optionally specify the search type (semantic, keyword, or hybrid).
