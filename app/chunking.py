@@ -1,7 +1,6 @@
 import re
 import numpy as np
-from vector_db import VectorDB
-from app.embedding import MistralEmbedder
+from embedding import MistralEmbedder
 
 def chunk_sentences(text: str) -> list[str]:
     """

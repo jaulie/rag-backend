@@ -1,12 +1,15 @@
 import os
-from mistralai import Mistral
+from dotenv import load_dotenv
+from mistralai.client import MistralClient
+
+load_dotenv()
 
 class MistralEmbedder:
     def __init__(self):
         api_key = os.getenv("MISTRAL_API_KEY")
         if not api_key:
             raise EnvironmentError("MISTRAL_API_KEY not set in environment")
-        self.client = Mistral(api_key=api_key)
+        self.client = MistralClient(api_key=api_key)
         self.model = "mistral-embed" 
 
     def embed_texts(self, texts: list[str]) -> list[list[float]]:

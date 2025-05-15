@@ -1,6 +1,6 @@
 import pymupdf
 
-def read_pdf(file_path: str) -> str:
+def extract_text(file_path: str) -> str:
     """Read PDF and extract all text."""
     doc = pymupdf.open(file_path)
     full_text = ""
