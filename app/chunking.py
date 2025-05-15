@@ -1,6 +1,5 @@
 import re
 import numpy as np
-import pymupdf
 from embedding import MistralEmbedder
 
 def chunk_sentences(text: str) -> list[str]:
@@ -9,25 +8,6 @@ def chunk_sentences(text: str) -> list[str]:
     """
     sentences = re.split(r'(?<=\.)\s+', text)
     return sentences
-
-# Chunk into pages first, not paragraphs.
-def extract_paragraphs(lines: list[str]) -> list[str]:
-    """
-    Extracts paragraphs using heuristics.
-    """
-    paragraphs = []
-    current = []
-    for line in lines:
-        line = line.strip()
-        if not line:
-            if current:
-                paragraphs.append(" ".join(current))
-                current = []
-        else:
-            current.append(line)
-    if current:
-        paragraphs.append(" ".join(current))
-    return paragraphs
 
 class SemanticChunker:
     def __init__(self, embedder: MistralEmbedder):
