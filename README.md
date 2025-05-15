@@ -18,7 +18,7 @@ rag-backend/
 │   ├── embedding.py        # Embedding model
 │   ├── main.py             # Endpoints for FastAPI
 │   ├── query_processing.py # Query handling functions           
-│   ├── read_pdf.py         # PyMuPDF text extraction functions
+│   ├── pdf_extraction.py         # PyMuPDF text extraction functions
 │   └── vector_db.py        # VectorDB with FAISS search
 ├── data/                   # Optional storage (e.g., temp PDFs)
 ├── requirements.txt
