@@ -12,7 +12,7 @@ class MistralEmbedder:
         self.client = MistralClient(api_key=api_key)
         self.model = "mistral-embed" 
 
-    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+    def embed_texts(self, texts: list[str], batch_size: int = 32) -> list[list[float]]:
         """
         Get embeddings for a list of text strings.
 
@@ -22,5 +22,14 @@ class MistralEmbedder:
         Returns:
             list[list[float]]: A list of embedding vectors.
         """
-        response = self.client.embeddings(model=self.model, input=texts)
-        return [e.embedding for e in response.data]
+        def batch_iterable(iterable, batch_size):
+            for i in range(0, len(iterable), batch_size):
+                yield iterable[i:i + batch_size]
+
+        all_embeddings = []
+        for batch in batch_iterable(texts, batch_size):
+            embeddings = self.client.embeddings(model=self.model, input=batch)
+            all_embeddings.extend(embeddings.data)
+
+        #response = self.client.embeddings(model=self.model, input=texts)
+        return [e.embedding for e in all_embeddings]

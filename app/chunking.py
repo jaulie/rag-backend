@@ -18,19 +18,19 @@ class SemanticChunker:
         similarity = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
         return 1 - similarity
 
-    def chunk(self, paragraphs: list[str]) -> list[list[str]]:
+    def chunk(self, pages: list[str]) -> list[list[str]]:
         """
         Call semantic chunking for each paragraph.
 
         Args:
-            paragraphs: List of paragraphs.
+            pages: List of pages.
 
         Returns:
             A list of chunks (each a list of strings).
         """
         chunks = []
-        for paragraph in paragraphs:
-            sentences = chunk_sentences(paragraph)
+        for page in pages:
+            sentences = chunk_sentences(page)
             embeddings = self.embedder.embed_texts(sentences)
             semantic_chunks = self.semantic_chunk(sentences, embeddings)
             chunks.extend(semantic_chunks)

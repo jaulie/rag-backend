@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 
-from chunking import extract_paragraphs, SemanticChunker
+from chunking import SemanticChunker
 from pdf_extraction import extract_pages, save_file
 from query_processing import is_retrieval_query, run, run_with_context
 from vector_db import VectorDB
@@ -25,14 +25,13 @@ async def read_pdf(files: list[UploadFile] = File(..., description="Upload one o
         save_file(content, pdf_path)
 
         # Get the text from the pdf and chunk into sentences
-        #full_text = extract_text(pdf_path)
-        paragraphs = extract_pages(pdf_path)
+        pages = extract_pages(pdf_path)
 
         # Clean the path
         os.remove(pdf_path)
 
         # Semantic Chunking
-        chunks = chunker.chunk(paragraphs)
+        chunks = chunker.chunk(pages)
 
         # Store in our VectorDB
         db.add_chunks(chunks)
